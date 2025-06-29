@@ -1,0 +1,6 @@
+src/
+examples/
+tsconfig.json
+tsconfig.tsbuildinfo
+prettier.config.cjs
+.eslintrc.cjs

@@ -1,0 +1,43 @@
+{
+  "name": "evstream",
+  "version": "1.0.0",
+  "description": "A simple and easy to implement server sent event library for express.js",
+  "keywords": [
+    "sse",
+    "server-sent-events",
+    "event-source"
+  ],
+  "homepage": "https://github.com/kisshan13/evstream#readme",
+  "bugs": {
+    "url": "https://github.com/kisshan13/evstream/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kisshan13/evstream.git"
+  },
+  "license": "MIT",
+  "author": "Kishan Sharma",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsc --watch",
+    "clean": "rimraf ./dist",
+    "build": "rimraf ./dist && tsc --incremental false"
+  },
+  "engines": {
+    "node": ">=17.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.7",
+    "@typescript-eslint/eslint-plugin": "^8.35.0",
+    "@typescript-eslint/parser": "^8.35.0",
+    "eslint": "^9.30.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.5.1",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "prettier": "^3.6.2",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.8.3"
+  }
+}
