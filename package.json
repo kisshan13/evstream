@@ -17,8 +17,8 @@
   },
   "license": "MIT",
   "author": "Kishan Sharma",
-  "type": "commonjs",
-  "main": "index.js",
+  "type": "module",
+  "main": "./dist/index.js",
   "scripts": {
     "dev": "tsc --watch",
     "clean": "rimraf ./dist",
@@ -28,6 +28,7 @@
     "node": ">=17.8.0"
   },
   "devDependencies": {
+    "@types/lodash": "^4.17.19",
     "@types/node": "^24.0.7",
     "@typescript-eslint/eslint-plugin": "^8.35.0",
     "@typescript-eslint/parser": "^8.35.0",
@@ -39,5 +40,8 @@
     "prettier": "^3.6.2",
     "rimraf": "^6.0.1",
     "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "lodash": "^4.17.21"
   }
 }
