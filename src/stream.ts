@@ -17,6 +17,8 @@ export class Evstream {
     #res: ServerResponse
     #opts?: EvOptions
     #url: URL
+    #heartbeatInterval?: NodeJS.Timeout
+    #onCloseHandler?: () => void
     constructor(req: IncomingMessage, res: ServerResponse, opts?: EvOptions) {
         this.#res = res
         this.#opts = opts
@@ -28,13 +30,36 @@ export class Evstream {
         this.#res.flushHeaders()
 
         if (opts?.heartbeat) {
-            const timeout = setInterval(() => {
+            this.#heartbeatInterval = setInterval(() => {
                 this.#res.write(message({ event: 'heartbeat', data: '' }))
             }, this.#opts.heartbeat)
 
-            this.#res.on('close', () => {
-                clearTimeout(timeout)
-            })
+            this.#onCloseHandler = () => {
+                this.#clearHeartbeat()
+            }
+
+            this.#res.on('close', this.#onCloseHandler)
+        }
+    }
+
+    /**
+     * Clears the heartbeat interval if it exists.
+     * Prevents memory leaks by ensuring the interval is properly cleaned up.
+     */
+    #clearHeartbeat() {
+        if (this.#heartbeatInterval) {
+            clearInterval(this.#heartbeatInterval)
+            this.#heartbeatInterval = undefined
+        }
+    }
+
+    /**
+     * Removes the close event listener to prevent memory leaks.
+     */
+    #removeCloseListener() {
+        if (this.#onCloseHandler) {
+            this.#res.removeListener('close', this.#onCloseHandler)
+            this.#onCloseHandler = undefined
         }
     }
 
@@ -53,6 +78,7 @@ export class Evstream {
 
             if (typeof isAuthenticated === 'boolean') {
                 if (!isAuthenticated) {
+                    this.#clearHeartbeat()
                     this.message({
                         data: { message: 'authentication failed' },
                         event: 'error',
@@ -83,8 +109,12 @@ export class Evstream {
 
     /**
      * Sends an "end" event and closes the SSE connection.
+     * Cleans up heartbeat interval and event listeners to prevent memory leaks.
      */
     close() {
+        this.#clearHeartbeat()
+        this.#removeCloseListener()
+        
         this.message({
             event: 'end',
             data: '',

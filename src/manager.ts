@@ -52,7 +52,7 @@ export class EvStreamManager {
 
         const client = new Evstream(req, res, opts)
         const id = uid({ counter: this.#count, prefix: this.#id })
-        const channel = []
+        const channel: string[] = []
         let isClosed = false
 
         this.#count += 1
@@ -66,18 +66,38 @@ export class EvStreamManager {
             }
 
             isClosed = true
+            
+            // Remove close event listener to prevent memory leaks
+            res.removeAllListeners('close')
+            
+            // Clean up client
             client.close()
+            
+            // Decrement count
             this.#count -= 1
+            
+            // Remove from all channels
             channel.forEach(chan => this.#unlisten(chan, id))
+            
+            // Clear channel array to release references
+            channel.length = 0
+            
+            // Remove client from map
             this.#clients.delete(id)
-            res.end()
+            
+            // End response if not already ended
+            if (!res.writableEnded) {
+                res.end()
+            }
         }
 
-        res.on('close', () => {
+        const onCloseHandler = () => {
             if (!isClosed) {
                 close()
             }
-        })
+        }
+
+        res.on('close', onCloseHandler)
 
         return {
             authenticate: client.authenticate.bind(client),
@@ -96,6 +116,8 @@ export class EvStreamManager {
      */
     send(name: string, msg: EvMessage) {
         const listeners = this.#listeners.get(name)
+
+        if (!listeners) return
 
         for (const [_, id] of listeners.entries()) {
             const client = this.#clients.get(id)
