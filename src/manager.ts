@@ -66,25 +66,25 @@ export class EvStreamManager {
             }
 
             isClosed = true
-            
+
             // Remove close event listener to prevent memory leaks
             res.removeAllListeners('close')
-            
+
             // Clean up client
             client.close()
-            
+
             // Decrement count
             this.#count -= 1
-            
+
             // Remove from all channels
             channel.forEach(chan => this.#unlisten(chan, id))
-            
+
             // Clear channel array to release references
             channel.length = 0
-            
+
             // Remove client from map
             this.#clients.delete(id)
-            
+
             // End response if not already ended
             if (!res.writableEnded) {
                 res.end()
@@ -139,16 +139,18 @@ export class EvStreamManager {
      * Enforces max listeners per channel.
      */
     #listen(name: string, id: string) {
-        if (!this.#listeners.has(name)) {
-            const size = this.#listeners.get(name)?.size
-            if (size >= this.#maxListeners) {
-                throw new EvMaxListenerError(size, name)
-            }
+        let listeners = this.#listeners.get(name)
 
-            this.#listeners.set(name, new Set())
+        if (!listeners) {
+            listeners = new Set<string>()
+            this.#listeners.set(name, listeners)
         }
 
-        this.#listeners.get(name)!.add(id)
+        if (listeners.size >= this.#maxListeners) {
+            throw new EvMaxListenerError(listeners.size, name)
+        }
+
+        listeners.add(id)
     }
 
     /**
