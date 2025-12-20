@@ -19,6 +19,17 @@
   "author": "Kishan Sharma",
   "type": "module",
   "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./adapter/redis": {
+      "import": "./dist/adapters/redis.js",
+      "types": "./dist/adapters/redis.d.ts"
+    }
+  },
   "scripts": {
     "dev": "tsc --watch",
     "clean": "rimraf ./dist",
@@ -28,6 +39,7 @@
     "node": ">=17.8.0"
   },
   "devDependencies": {
+    "@types/ioredis": "^5.0.0",
     "@types/lodash": "^4.17.19",
     "@types/node": "^24.0.7",
     "@typescript-eslint/eslint-plugin": "^8.35.0",
@@ -37,6 +49,7 @@
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-prettier": "^5.5.1",
     "eslint-plugin-simple-import-sort": "^12.1.1",
+    "ioredis": "^5.5.0",
     "prettier": "^3.6.2",
     "rimraf": "^6.0.1",
     "typescript": "^5.8.3"

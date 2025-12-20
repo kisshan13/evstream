@@ -39,11 +39,18 @@ export interface EvManagerOptions {
 }
 
 // Options for initializing EvState.
+export interface EvStateAdapter {
+    publish(channel: string, message: any): Promise<void>
+    subscribe(channel: string, onMessage: (message: any) => void): Promise<void>
+    unsubscribe(channel: string): Promise<void>
+}
+
 export interface EvStateOptions<T> {
     initialValue: T
     channel: string
     manager: EvStreamManager
     key?: string
+    adapter?: EvStateAdapter
 }
 
 export type EvOnClose = (channels: string[]) => Promise<void>

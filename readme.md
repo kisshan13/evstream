@@ -188,7 +188,35 @@ Reactive states are data which you can shared across multiple clients within the
 
   **See** `channel` **and the value pass to the** `listen()` **must be the same**
 
-### 5. Sending data to a channel
+### 5. Distributed Reactive State (Redis)
+
+When running multiple server instances, you can synchronize `EvState` across them using the built-in Redis adapter.
+
+1.  **Install the peer dependency:**
+    ```bash
+    npm install ioredis
+    ```
+
+2.  **Use the adapter:**
+
+    ```javascript
+    import { EvState, EvStreamManager } from "evstream"
+    import { EvRedisAdapter } from "evstream/adapter/redis"
+
+    const manager = new EvStreamManager();
+    const redisAdapter = new EvRedisAdapter("redis://localhost:6379");
+    
+    const userCount = new EvState({ 
+        channel: "user-count", 
+        initialValue: 0, 
+        manager: manager,
+        adapter: redisAdapter 
+    })
+    ```
+    
+    Updates to `userCount` will now be synchronized across all instances connected to the same Redis.
+
+### 6. Sending data to a channel
 
 To send data to a channel you can use `send()` method from `EvStreamManager` class.
 
@@ -202,7 +230,7 @@ const manager = new EvStreamManager();
 manager.send("<channel-name>", {event: "custom-event", data: {"foo": "bar"}})
 ```
 
-### 6. Listening for channels
+### 7. Listening for channels
 
 To listen for data from any channel you can use `listen()` function from `Evstream` class.
 
@@ -368,7 +396,8 @@ new EvState<T>({
   channel,
   initialValue,
   manager,
-  key
+  key,
+  adapter
 }: EvStateOptions<T>)
 ```
 
@@ -378,6 +407,7 @@ new EvState<T>({
 * `initialValue`: `T` – The initial state value.
 * `manager`: `EvStreamManager` – The SSE manager instance used for broadcasting.
 * `key` *(optional)*: `string` – The key used in the broadcasted data object (default: `'value'`).
+* `adapter` *(optional)*: `EvStateAdapter` – Adapter for distributed state synchronization (e.g. `EvRedisAdapter`).
 
 ---
 
@@ -437,13 +467,31 @@ new EvMaxConnectionsError(connections: number)
 ```ts
 const manager = new EvStreamManager({ maxConnection: 100 });
 if (tooManyConnections) {
+```
+
   throw new EvMaxConnectionsError(100)
 }
 ```
 
 ---
-
-## `EvMaxListenerError`
+ 
+ ## `EvRedisAdapter`
+ 
+ Adapter for synchronizing `EvState` across multiple instances using Redis Pub/Sub.
+ 
+ ### Constructor
+ 
+ ```ts
+ new EvRedisAdapter(options?: RedisOptions | string)
+ ```
+ 
+ #### Parameters:
+ 
+ * `options`: `RedisOptions | string` – Configuration options for the Redis client (from `ioredis`), or a Redis connection URL.
+ 
+ ---
+ 
+ ## `EvMaxListenerError`
 
 Represents an error thrown when the number of listeners on a given channel exceeds the allowed `maxListeners` limit (default: `5000`).
 
@@ -573,6 +621,7 @@ Options for initializing a reactive state with `EvState`.
 - `channel`: Channel name for broadcasting
 - `manager`: Instance of `EvStreamManager`
 - `key` *(optional)*: Key for wrapping state in the broadcast (default: `'value'`)
+- `adapter` *(optional)*: Instance of `EvStateAdapter` (e.g., `EvRedisAdapter`) for distributed synchronization.
 
 ---
 
