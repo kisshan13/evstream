@@ -1,7 +1,4 @@
-src/
-examples/
-tsconfig.json
+src / examples / tsconfig.json
 tsconfig.tsbuildinfo
-prettier.config.cjs
-.eslintrc.cjs
+prettier.config.cjs.eslintrc.cjs
 docs
