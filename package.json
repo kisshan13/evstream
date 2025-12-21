@@ -1,60 +1,73 @@
 {
-  "name": "evstream",
-  "version": "1.0.1",
-  "description": "A simple and easy to implement server sent event library for express.js",
-  "keywords": [
-    "sse",
-    "server-sent-events",
-    "event-source"
-  ],
-  "homepage": "https://github.com/kisshan13/evstream#readme",
-  "bugs": {
-    "url": "https://github.com/kisshan13/evstream/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/kisshan13/evstream.git"
-  },
-  "license": "MIT",
-  "author": "Kishan Sharma",
-  "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    },
-    "./adapter/redis": {
-      "import": "./dist/adapters/redis.js",
-      "types": "./dist/adapters/redis.d.ts"
-    }
-  },
-  "scripts": {
-    "dev": "tsc --watch",
-    "clean": "rimraf ./dist",
-    "build": "rimraf ./dist && tsc --incremental false"
-  },
-  "engines": {
-    "node": ">=17.8.0"
-  },
-  "devDependencies": {
-    "@types/ioredis": "^5.0.0",
-    "@types/lodash": "^4.17.19",
-    "@types/node": "^24.0.7",
-    "@typescript-eslint/eslint-plugin": "^8.35.0",
-    "@typescript-eslint/parser": "^8.35.0",
-    "eslint": "^9.30.0",
-    "eslint-config-prettier": "^10.1.5",
-    "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-prettier": "^5.5.1",
-    "eslint-plugin-simple-import-sort": "^12.1.1",
-    "ioredis": "^5.5.0",
-    "prettier": "^3.6.2",
-    "rimraf": "^6.0.1",
-    "typescript": "^5.8.3"
-  },
-  "dependencies": {
-    "lodash": "^4.17.21"
-  }
+	"name": "evstream",
+	"version": "1.0.1",
+	"description": "A simple and easy to implement server sent event library for express.js",
+	"keywords": [
+		"sse",
+		"server-sent-events",
+		"event-source"
+	],
+	"homepage": "https://github.com/kisshan13/evstream#readme",
+	"bugs": {
+		"url": "https://github.com/kisshan13/evstream/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/kisshan13/evstream.git"
+	},
+	"license": "MIT",
+	"author": "Kishan Sharma",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		},
+		"./adapter/redis": {
+			"import": "./dist/adapters/redis.js",
+			"types": "./dist/adapters/redis.d.ts"
+		}
+	},
+	"lint-staged": {
+		"*.{js,jsx,ts,tsx,cjs,mjs}": [
+			"prettier --write"
+		],
+		"*.{json,md,yml,yaml}": [
+			"prettier --write"
+		]
+	},
+	"scripts": {
+		"dev": "tsc --watch",
+		"clean": "rimraf ./dist",
+		"build": "rimraf ./dist && tsc --incremental false",
+		"prepare": "husky",
+		"lint-staged": "lint-staged",
+		"format": "prettier --write \"**/*.{js,jsx,ts,tsx}\""
+	},
+	"engines": {
+		"node": ">=17.8.0"
+	},
+	"devDependencies": {
+		"@types/ioredis": "^5.0.0",
+		"@types/lodash": "^4.17.19",
+		"@types/node": "^24.0.7",
+		"@typescript-eslint/eslint-plugin": "^8.35.0",
+		"@typescript-eslint/parser": "^8.35.0",
+		"eslint": "^9.30.0",
+		"eslint-config-prettier": "^10.1.5",
+		"eslint-plugin-import": "^2.32.0",
+		"eslint-plugin-prettier": "^5.5.1",
+		"eslint-plugin-simple-import-sort": "^12.1.1",
+		"ioredis": "^5.5.0",
+		"prettier": "^3.7.4",
+		"rimraf": "^6.0.1",
+		"typescript": "^5.8.3",
+		"husky": "^9.1.7",
+		"lint-staged": "^16.2.7"
+	},
+	"dependencies": {
+		"lodash": "^4.17.21"
+	}
 }

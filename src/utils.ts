@@ -6,25 +6,24 @@
  * @returns
  */
 export function safeJsonParse(val: any) {
-  if (typeof val === "string") {
-    return val;
-  }
+	if (typeof val === 'string') {
+		return val
+	}
 
-  if (typeof val === "object") {
-    try {
-      return JSON.stringify(val);
-    } catch (error) {
-      return "";
-    }
-  }
+	if (typeof val === 'object') {
+		try {
+			return JSON.stringify(val)
+		} catch (error) {
+			return ''
+		}
+	}
 
-  return "";
+	return ''
 }
 
-
 export function uid(opts?: { prefix?: string; counter?: number }) {
-  const now = Date.now().toString(36);
-  const rand = Math.random().toString(26).substring(2, 10);
+	const now = Date.now().toString(36)
+	const rand = Math.random().toString(26).substring(2, 10)
 
-  return `${opts?.prefix ? `${opts?.prefix}-` : ""}${now}-${rand}-${opts?.counter}`;
+	return `${opts?.prefix ? `${opts?.prefix}-` : ''}${now}-${rand}-${opts?.counter}`
 }
