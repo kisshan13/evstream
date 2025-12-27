@@ -19,25 +19,26 @@ npm install evstream
 
 ## Usage
 
-We used `express.js` to show you the usage. However you can use the library with any backend library or framework supporting `IncomingMessage` and `ServerResponse` objects for IO. 
+We used `express.js` to show you the usage. However you can use the library with any backend library or framework supporting `IncomingMessage` and `ServerResponse` objects for IO.
 
 ### 1. Creating a base SSE Connection
 
 ```javascript
 import { Evstream } from 'evstream'
 
-app.get("/", (req, res) => {
-    const stream = new Evstream(req, res, { heartbeat: 5000 })
+app.get('/', (req, res) => {
+	const stream = new Evstream(req, res, { heartbeat: 5000 })
 
-    stream.message({ event: "connected", data: { userId: "a-user-id" } })
+	stream.message({ event: 'connected', data: { userId: 'a-user-id' } })
 
-    setTimeout(() => {
-        stream.close();
-    }, 5000)
+	setTimeout(() => {
+		stream.close()
+	}, 5000)
 })
 ```
 
 Client Recieves :
+
 ```
 event:connected
 data:{"userId":"a-user-id"}
@@ -52,26 +53,27 @@ data:
 ### 2. Creating a SSE Connection with query based authentication
 
 ```javascript
-app.get("/", async (req, res) => {
-    const stream = new Evstream(req, res, {
-        heartbeat: 5000, authentication: {
-            method: "query",
-            param: "token",
-            verify: async (token) => false
-        }
-    })
+app.get('/', async (req, res) => {
+	const stream = new Evstream(req, res, {
+		heartbeat: 5000,
+		authentication: {
+			method: 'query',
+			param: 'token',
+			verify: async (token) => false,
+		},
+	})
 
-    const isAuthenticated = await stream.authenticate();
+	const isAuthenticated = await stream.authenticate()
 
-    if (!isAuthenticated) {
-        return;
-    }
+	if (!isAuthenticated) {
+		return
+	}
 
-    stream.message({ event: "connected", data: { userId: "a-user-id" } })
+	stream.message({ event: 'connected', data: { userId: 'a-user-id' } })
 
-    setTimeout(() => {
-        stream.close();
-    }, 5000)
+	setTimeout(() => {
+		stream.close()
+	}, 5000)
 })
 ```
 
@@ -95,27 +97,26 @@ To authenticate the incoming request there is a built-in support in `evstream`. 
 const isAuthenticated = await stream.authenticate()
 ```
 
-
 ### 3. Creating a stream manager
 
 Using `EvStreamManager` you can broadcast messages, create channels and manage connections in a much better way.
 
 ```javascript
-const manager = new EvStreamManager();
+const manager = new EvStreamManager()
 
-app.get("/", (req, res) => {
-    const stream = manager.createStream(req, res)
+app.get('/', (req, res) => {
+	const stream = manager.createStream(req, res)
 
-    const i = setInterval(() => {
-        stream.message({ data: { hello: "hii" } })
-    }, 2000)
+	const i = setInterval(() => {
+		stream.message({ data: { hello: 'hii' } })
+	}, 2000)
 
-    stream.message({ data: { why: "hii" }, event: "hello" })
+	stream.message({ data: { why: 'hii' }, event: 'hello' })
 
-    setTimeout(() => {
-        clearTimeout(i);
-        stream.close();
-    }, 10000)
+	setTimeout(() => {
+		clearTimeout(i)
+		stream.close()
+	}, 10000)
 })
 ```
 
@@ -126,14 +127,17 @@ Reactive states are data which you can shared across multiple clients within the
 - #### Creating a reactive States
 
   ```javascript
-  import { EvState, EvStreamManager } from "evstream"
+  import { EvState, EvStreamManager } from 'evstream'
 
-  const manager = new EvStreamManager();
-  const userCount = new EvState({ channel: "user-count", initialValue: 0, manager: manager })
+  const manager = new EvStreamManager()
+  const userCount = new EvState({
+  	channel: 'user-count',
+  	initialValue: 0,
+  	manager: manager,
+  })
   ```
 
   To create a reactive value you can use `EvState` class which takes a `channel` which is then listened by the connected client for any update.
-
   - `channel` : A unique name to which client will listen to for state changes.
   - `initialValue` : Default value for the state.
   - `manager` : Connection manager for the connected clients.
@@ -141,46 +145,48 @@ Reactive states are data which you can shared across multiple clients within the
   **Getting the state data**
 
   ```javascript
-  userCount.get();
+  userCount.get()
   ```
 
   **Updating State data**
 
   ```javascript
-  userCount.set((prev) => prev += 1);
+  userCount.set((prev) => (prev += 1))
   ```
+
   This will update the values and send the data to all clients which are listening for the state changes.
 
-
 - #### Listening for a reactive state
+
   ```javascript
-  import { EvState, EvStreamManager } from "evstream"
+  import { EvState, EvStreamManager } from 'evstream'
 
+  const manager = new EvStreamManager()
+  const userCount = new EvState({
+  	channel: 'user-count',
+  	initialValue: 0,
+  	manager: manager,
+  })
 
-  const manager = new EvStreamManager();
-  const userCount = new EvState({ channel: "user-count", initialValue: 0, manager: manager })
+  app.get('/', (req, res) => {
+  	const stream = manager.createStream(req, res)
+  	stream.listen('user-count')
+  	userCount.set((user) => user + 1)
 
+  	const i = setInterval(() => {
+  		stream.message({ data: { hello: 'hii' } })
+  	}, 2000)
 
-  app.get("/", (req, res) => {
-      const stream = manager.createStream(req, res)
-      stream.listen("user-count")
-      userCount.set((user) => user + 1);
+  	stream.message({ data: { why: 'hii' }, event: 'hello' })
 
-      const i = setInterval(() => {
-          stream.message({ data: { hello: "hii" } })
-      }, 2000)
+  	setTimeout(() => {
+  		clearTimeout(i)
+  		stream.close((channels) => {
+  			userCount.set((user) => user - 1)
 
-      stream.message({ data: { why: "hii" }, event: "hello" })
-
-      setTimeout(() => {
-          clearTimeout(i);
-          stream.close((channels) => {
-
-              userCount.set((user) => user - 1)
-
-              console.log(channels)
-          });
-      }, 10000)
+  			console.log(channels)
+  		})
+  	}, 10000)
   })
   ```
 
@@ -193,6 +199,7 @@ Reactive states are data which you can shared across multiple clients within the
 When running multiple server instances, you can synchronize `EvState` across them using the built-in Redis adapter.
 
 1.  **Install the peer dependency:**
+
     ```bash
     npm install ioredis
     ```
@@ -200,20 +207,20 @@ When running multiple server instances, you can synchronize `EvState` across the
 2.  **Use the adapter:**
 
     ```javascript
-    import { EvState, EvStreamManager } from "evstream"
-    import { EvRedisAdapter } from "evstream/adapter/redis"
+    import { EvState, EvStreamManager } from 'evstream'
+    import { EvRedisAdapter } from 'evstream/adapter/redis'
 
-    const manager = new EvStreamManager();
-    const redisAdapter = new EvRedisAdapter("redis://localhost:6379");
-    
-    const userCount = new EvState({ 
-        channel: "user-count", 
-        initialValue: 0, 
-        manager: manager,
-        adapter: redisAdapter 
+    const manager = new EvStreamManager()
+    const redisAdapter = new EvRedisAdapter('redis://localhost:6379')
+
+    const userCount = new EvState({
+    	channel: 'user-count',
+    	initialValue: 0,
+    	manager: manager,
+    	adapter: redisAdapter,
     })
     ```
-    
+
     Updates to `userCount` will now be synchronized across all instances connected to the same Redis.
 
 ### 6. Sending data to a channel
@@ -223,11 +230,11 @@ To send data to a channel you can use `send()` method from `EvStreamManager` cla
 Example :
 
 ```javascript
-import { EvStreamManager } from "evstream"
+import { EvStreamManager } from 'evstream'
 
-const manager = new EvStreamManager();
+const manager = new EvStreamManager()
 
-manager.send("<channel-name>", {event: "custom-event", data: {"foo": "bar"}})
+manager.send('<channel-name>', { event: 'custom-event', data: { foo: 'bar' } })
 ```
 
 ### 7. Listening for channels
@@ -235,8 +242,42 @@ manager.send("<channel-name>", {event: "custom-event", data: {"foo": "bar"}})
 To listen for data from any channel you can use `listen()` function from `Evstream` class.
 
 ```javascript
-client.listen("<channel-name>")
+client.listen('<channel-name>')
 ```
+
+### 8. Shared State (EvStateManager)
+
+When running multiple server instances, you may want state creation and removal to stay in sync across all instances.
+
+EvStateManager helps manage shared reactive states and keeps their lifecycle consistent using Pub/Sub.
+
+```typescript
+import { EvStreamManager } from 'evstream'
+import { EvRedisAdapter } from 'evstream/adapter/redis'
+import { EvRedisPubSub } from 'evstream/adapter/pub-sub'
+import { EvStateManager } from 'evstream/state-manager'
+
+const streamManager = new EvStreamManager()
+const adapter = new EvRedisAdapter('redis://localhost:6379')
+const pubsub = new EvRedisPubSub({
+	subject: 'ev:states',
+	options: { host: 'localhost', port: 6379 },
+})
+
+const stateManager = new EvStateManager({
+	manager: streamManager,
+	adapter,
+	pubsub,
+})
+
+const userCount = stateManager.createState('user-count', 0)
+```
+
+**Notes**
+
+- States are identified by string-based keys
+- State creation and removal are synchronized across instances
+- State updates are still handled by EvState
 
 ## API Reference
 
@@ -252,9 +293,9 @@ new Evstream(req: IncomingMessage, res: ServerResponse, opts?: EvOptions)
 
 #### Parameters:
 
-* `req`: `IncomingMessage` – The incoming HTTP request.
-* `res`: `ServerResponse` – The HTTP response to write SSE messages to.
-* `opts` *(optional)*: `EvOptions` – Optional configuration including heartbeat interval and authentication.
+- `req`: `IncomingMessage` – The incoming HTTP request.
+- `res`: `ServerResponse` – The HTTP response to write SSE messages to.
+- `opts` _(optional)_: `EvOptions` – Optional configuration including heartbeat interval and authentication.
 
 ---
 
@@ -264,8 +305,8 @@ new Evstream(req: IncomingMessage, res: ServerResponse, opts?: EvOptions)
 
 Performs optional token-based authentication if `opts.authentication` is provided.
 
-* If authentication fails, sends an error message and closes the connection.
-* Returns `true` if authenticated, `false` if rejected, or `undefined` if no authentication is configured.
+- If authentication fails, sends an error message and closes the connection.
+- Returns `true` if authenticated, `false` if rejected, or `undefined` if no authentication is configured.
 
 ---
 
@@ -275,7 +316,7 @@ Sends an SSE message to the connected client.
 
 ##### Parameters:
 
-* `msg`: `EvMessage` – Object containing `event`, `data`, and optionally `id`.
+- `msg`: `EvMessage` – Object containing `event`, `data`, and optionally `id`.
 
 ---
 
@@ -289,11 +330,11 @@ Sends a final `end` event and closes the SSE connection.
 
 ```js
 const ev = new Evstream(req, res, {
-  heartbeat: 30000,
-  authentication: {
-    param: 'token',
-    verify: async (token) => token === 'valid_token'
-  }
+	heartbeat: 30000,
+	authentication: {
+		param: 'token',
+		verify: async (token) => token === 'valid_token',
+	},
 })
 
 await ev.authenticate()
@@ -315,11 +356,10 @@ new EvStreamManager(opts?: EvManagerOptions)
 
 #### Parameters:
 
-* `opts` *(optional)*: `EvManagerOptions`
-
-  * `maxConnection`: Maximum allowed active connections (default: `5000`)
-  * `maxListeners`: Maximum listeners per channel (default: `5000`)
-  * `id`: Optional prefix for client IDs
+- `opts` _(optional)_: `EvManagerOptions`
+  - `maxConnection`: Maximum allowed active connections (default: `5000`)
+  - `maxListeners`: Maximum listeners per channel (default: `5000`)
+  - `id`: Optional prefix for client IDs
 
 ---
 
@@ -331,18 +371,18 @@ Creates and tracks a new SSE stream.
 
 #### Parameters:
 
-* `req`: `IncomingMessage` – Incoming HTTP request
-* `res`: `ServerResponse` – HTTP response for the SSE connection
-* `opts` *(optional)*: `EvOptions` – Optional stream config (heartbeat, authentication, etc.)
+- `req`: `IncomingMessage` – Incoming HTTP request
+- `res`: `ServerResponse` – HTTP response for the SSE connection
+- `opts` _(optional)_: `EvOptions` – Optional stream config (heartbeat, authentication, etc.)
 
 #### Returns:
 
 An object with methods:
 
-* `authenticate(): Promise<boolean | undefined>` – Authenticates the stream (delegates to `Evstream`)
-* `message(msg: EvMessage): void` – Sends a message to the stream
-* `close(onClose?: EvOnClose): void` – Closes the stream and cleans up listeners
-* `listen(name: string): void` – Subscribes the stream to a named channel
+- `authenticate(): Promise<boolean | undefined>` – Authenticates the stream (delegates to `Evstream`)
+- `message(msg: EvMessage): void` – Sends a message to the stream
+- `close(onClose?: EvOnClose): void` – Closes the stream and cleans up listeners
+- `listen(name: string): void` – Subscribes the stream to a named channel
 
 ---
 
@@ -352,8 +392,8 @@ Broadcasts a message to all clients listening on the specified `name` (channel).
 
 ##### Parameters:
 
-* `name`: `string` – Channel name
-* `msg`: `EvMessage` – The message to broadcast
+- `name`: `string` – Channel name
+- `msg`: `EvMessage` – The message to broadcast
 
 ---
 
@@ -403,11 +443,11 @@ new EvState<T>({
 
 #### Parameters:
 
-* `channel`: `string` – The name of the channel to broadcast updates to.
-* `initialValue`: `T` – The initial state value.
-* `manager`: `EvStreamManager` – The SSE manager instance used for broadcasting.
-* `key` *(optional)*: `string` – The key used in the broadcasted data object (default: `'value'`).
-* `adapter` *(optional)*: `EvStateAdapter` – Adapter for distributed state synchronization (e.g. `EvRedisAdapter`).
+- `channel`: `string` – The name of the channel to broadcast updates to.
+- `initialValue`: `T` – The initial state value.
+- `manager`: `EvStreamManager` – The SSE manager instance used for broadcasting.
+- `key` _(optional)_: `string` – The key used in the broadcasted data object (default: `'value'`).
+- `adapter` _(optional)_: `EvStateAdapter` – Adapter for distributed state synchronization (e.g. `EvRedisAdapter`).
 
 ---
 
@@ -425,7 +465,7 @@ Updates the internal state based on a callback function. If the new value is dif
 
 ##### Parameters:
 
-* `callback`: `(val: T) => T` – A function that receives the current state and returns the new state.
+- `callback`: `(val: T) => T` – A function that receives the current state and returns the new state.
 
 ---
 
@@ -433,13 +473,13 @@ Updates the internal state based on a callback function. If the new value is dif
 
 ```ts
 const state = new EvState({
-  channel: 'counter',
-  initialValue: 0,
-  manager: evManager,
-  key: 'count'
+	channel: 'counter',
+	initialValue: 0,
+	manager: evManager,
+	key: 'count',
 })
 
-state.set(prev => prev + 1)
+state.set((prev) => prev + 1)
 // Will broadcast: { event: 'counter', data: { count: 1 } }
 
 const current = state.get()
@@ -465,33 +505,29 @@ new EvMaxConnectionsError(connections: number)
 #### Example
 
 ```ts
-const manager = new EvStreamManager({ maxConnection: 100 });
+const manager = new EvStreamManager({ maxConnection: 100 })
 if (tooManyConnections) {
-```
-
-  throw new EvMaxConnectionsError(100)
+	throw new EvMaxConnectionsError(100)
 }
 ```
 
+## `EvRedisAdapter`
+
+Adapter for synchronizing `EvState` across multiple instances using Redis Pub/Sub.
+
+### Constructor
+
+```ts
+new EvRedisAdapter(options?: RedisOptions | string)
+```
+
+#### Parameters:
+
+- `options`: `RedisOptions | string` – Configuration options for the Redis client (from `ioredis`), or a Redis connection URL.
+
 ---
- 
- ## `EvRedisAdapter`
- 
- Adapter for synchronizing `EvState` across multiple instances using Redis Pub/Sub.
- 
- ### Constructor
- 
- ```ts
- new EvRedisAdapter(options?: RedisOptions | string)
- ```
- 
- #### Parameters:
- 
- * `options`: `RedisOptions | string` – Configuration options for the Redis client (from `ioredis`), or a Redis connection URL.
- 
- ---
- 
- ## `EvMaxListenerError`
+
+## `EvMaxListenerError`
 
 Represents an error thrown when the number of listeners on a given channel exceeds the allowed `maxListeners` limit (default: `5000`).
 
@@ -510,7 +546,7 @@ new EvMaxListenerError(listeners: number, channel: string)
 
 ```ts
 if (tooManyListenersOnChannel) {
-  throw new EvMaxListenerError(5000, 'news')
+	throw new EvMaxListenerError(5000, 'news')
 }
 ```
 
@@ -534,17 +570,17 @@ Represents built-in event types commonly used in Server-Sent Events.
 
 ```ts
 interface EvMessage {
-  event?: string | EvEventsType
-  data: string | object
-  id?: string
+	event?: string | EvEventsType
+	data: string | object
+	id?: string
 }
 ```
 
 Represents a message sent to the client via SSE.
 
-- `event` *(optional)*: Name of the event.
+- `event` _(optional)_: Name of the event.
 - `data`: The payload to send. Can be a string or an object.
-- `id` *(optional)*: Event ID for reconnection tracking.
+- `id` _(optional)_: Event ID for reconnection tracking.
 
 ---
 
@@ -552,9 +588,9 @@ Represents a message sent to the client via SSE.
 
 ```ts
 interface EvAuthenticationOptions {
-  method: 'query'
-  param: string
-  verify: (token: string) => Promise<EvMessage> | undefined | null | boolean
+	method: 'query'
+	param: string
+	verify: (token: string) => Promise<EvMessage> | undefined | null | boolean
 }
 ```
 
@@ -574,8 +610,8 @@ Options for enabling query-based token authentication.
 
 ```ts
 interface EvOptions {
-  authentication?: EvAuthenticationOptions
-  heartbeat?: number
+	authentication?: EvAuthenticationOptions
+	heartbeat?: number
 }
 ```
 
@@ -590,9 +626,9 @@ Optional config for an individual SSE stream.
 
 ```ts
 interface EvManagerOptions {
-  id?: string
-  maxConnection?: number
-  maxListeners?: number
+	id?: string
+	maxConnection?: number
+	maxListeners?: number
 }
 ```
 
@@ -608,10 +644,10 @@ Configuration for `EvStreamManager`.
 
 ```ts
 interface EvStateOptions<T> {
-  initialValue: T
-  channel: string
-  manager: EvStreamManager
-  key?: string
+	initialValue: T
+	channel: string
+	manager: EvStreamManager
+	key?: string
 }
 ```
 
@@ -620,8 +656,8 @@ Options for initializing a reactive state with `EvState`.
 - `initialValue`: Initial state value
 - `channel`: Channel name for broadcasting
 - `manager`: Instance of `EvStreamManager`
-- `key` *(optional)*: Key for wrapping state in the broadcast (default: `'value'`)
-- `adapter` *(optional)*: Instance of `EvStateAdapter` (e.g., `EvRedisAdapter`) for distributed synchronization.
+- `key` _(optional)_: Key for wrapping state in the broadcast (default: `'value'`)
+- `adapter` _(optional)_: Instance of `EvStateAdapter` (e.g., `EvRedisAdapter`) for distributed synchronization.
 
 ---
 
@@ -632,6 +668,138 @@ type EvOnClose = (channels: string[]) => Promise<void>
 ```
 
 Callback triggered when a client connection is closed. Receives a list of channels the client was subscribed to.
+
+---
+
+## `EvStateManager<S>`
+
+Manages a collection of shared reactive states and synchronizes their **creation and removal** across multiple instances using Pub/Sub.
+
+### Constructor
+
+```ts
+new EvStateManager<S>({
+  manager,
+  adapter?,
+  pubsub?
+})
+```
+
+#### Parameters
+
+- `manager`: `EvStreamManager`
+  Stream manager used by all states.
+
+- `adapter` _(optional)_: `EvRedisAdapter`
+  Adapter used by `EvState` for distributed state updates.
+
+- `pubsub` _(optional)_: `EvRedisPubSub`
+  Pub/Sub instance used to synchronize state lifecycle (`create` / `remove`).
+
+---
+
+### Methods
+
+#### `createState<K extends keyof S>(key: K, initialValue: S[K]): EvState<S[K]>`
+
+Creates a new state or returns an existing one.
+
+- Creates the state locally
+- Broadcasts creation to other instances (if Pub/Sub is enabled)
+
+---
+
+#### `getState<K extends keyof S>(key: K): EvState<S[K]> | undefined`
+
+Returns an existing state if it exists.
+
+---
+
+#### `hasState<K extends keyof S>(key: K): boolean`
+
+Checks whether a state exists.
+
+---
+
+#### `removeState<K extends keyof S>(key: K): void`
+
+Removes a state locally and broadcasts the removal to other instances.
+
+---
+
+### Example
+
+```ts
+const state = stateManager.createState('user-count', 0)
+
+state.set((v) => v + 1)
+
+stateManager.removeState('user-count')
+```
+
+---
+
+## `EvRedisPubSub`
+
+Lightweight Redis-based Pub/Sub utility used to synchronize events between server instances.
+
+### Constructor
+
+```ts
+new EvRedisPubSub({
+  subject,
+  options,
+  onMessage?
+})
+```
+
+#### Parameters
+
+- `subject`: `string`
+  Redis channel name used for Pub/Sub.
+
+- `options`: `RedisOptions`
+  Redis connection options (`ioredis`).
+
+- `onMessage` _(optional)_: `(message: any) => void`
+  Callback invoked when a message is received.
+
+---
+
+### Methods
+
+#### `send(message: any): Promise<void>`
+
+Publishes a message to the configured Redis channel.
+
+- Automatically filters out self-published messages.
+
+---
+
+#### `onMessage(callback: (message: any) => void): void`
+
+Registers or replaces the message handler.
+
+---
+
+#### `close(): Promise<void>`
+
+Closes Redis publisher and subscriber connections.
+
+### Example
+
+```ts
+const pubsub = new EvRedisPubSub({
+	subject: 'ev:states',
+	options: { host: 'localhost', port: 6379 },
+})
+
+pubsub.onMessage((msg) => {
+	console.log('received:', msg)
+})
+
+await pubsub.send({ type: 'create', channel: 'user-count' })
+```
 
 ---
 
@@ -647,19 +815,21 @@ Contributions are welcome! Whether it's a bug fix, feature request, or improveme
    ```bash
    git checkout -b feature/your-feature-name
    ```
+
 3. **Commit your changes** with a clear message.
 4. **Push to your fork**:
 
    ```bash
    git push origin feature/your-feature-name
    ```
+
 5. **Open a Pull Request** and describe your changes.
 
 ### Guidelines:
 
-* Keep your code clean and consistent with the project's existing style.
-* Include relevant tests and documentation updates.
-* Make sure the project builds and passes all existing checks.
+- Keep your code clean and consistent with the project's existing style.
+- Include relevant tests and documentation updates.
+- Make sure the project builds and passes all existing checks.
 
 ---
 

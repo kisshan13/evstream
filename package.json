@@ -28,6 +28,10 @@
 		"./adapter/redis": {
 			"import": "./dist/adapters/redis.js",
 			"types": "./dist/adapters/redis.d.ts"
+		},
+		"./extensions/state-manager": {
+			"import": "./dist/extensions/state-manager.js",
+			"types": "./dist/extensions/state-manager.d.ts"
 		}
 	},
 	"lint-staged": {

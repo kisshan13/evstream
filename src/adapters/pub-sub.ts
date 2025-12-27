@@ -1,57 +1,88 @@
 import Redis, { RedisOptions } from 'ioredis'
 import { uid } from '../utils.js'
 
-interface EvRedisPubSubOptions {
-	subject?: string
+/**
+ * Configuration options for EvRedisPubSub
+ */
+interface EvRedisPubSubOptions<T> {
+	/** Redis Pub/Sub channel name */
+	subject: string
+
+	/** Redis connection options */
 	options: RedisOptions
-	onMessage?: (message: Object) => void
+
+	/** Optional initial message handler */
+	onMessage?: (message: T) => void
 }
 
-class EvRedisPubSub {
-	#options: RedisOptions
+/**
+ * Redis-based Pub/Sub helper for cross-process communication.
+ *
+ * - Uses separate publisher and subscriber connections
+ * - Prevents self-message delivery using instance UID
+ * - Typed message payload via generics
+ */
+export class EvRedisPubSub<T = unknown> {
 	#subject: string
 	#pub: Redis
 	#sub: Redis
 	#instanceId: string
-	#onMessage?: (message: Object) => void
+	#onMessage?: (message: T) => void
 
-	constructor({ options, subject, onMessage }: EvRedisPubSubOptions) {
+	constructor({ options, subject, onMessage }: EvRedisPubSubOptions<T>) {
 		this.#pub = new Redis(options)
 		this.#sub = new Redis(options)
+		this.#subject = subject
 		this.#onMessage = onMessage
 		this.#instanceId = uid({ prefix: subject, counter: Math.random() })
-		this.#subject = uid({ prefix: subject, counter: subject?.length || 0 })
 
 		this.init()
 	}
 
+	/**
+	 * Initializes Redis subscriptions and listeners.
+	 */
 	private async init() {
-		this.#pub.on('error', (err) => {})
-
-		this.#sub.on('error', (err) => {})
+		this.#pub.on('error', () => {})
+		this.#sub.on('error', () => {})
 
 		await this.#sub.subscribe(this.#subject)
 
 		this.#sub.on('message', (_, raw) => {
 			try {
-				const msg = JSON.parse(raw)
-				if (msg?.uid !== this.#instanceId) {
-					this.#onMessage(msg?.msg)
+				const data = JSON.parse(raw)
+
+				// Ignore messages from the same instance
+				if (data?.uid !== this.#instanceId) {
+					this.#onMessage?.(data.msg as T)
 				}
-			} catch {}
+			} catch {
+				// Ignore malformed payloads
+			}
 		})
 	}
 
-	async send(msg: Object) {
+	/**
+	 * Publishes a message to the Redis channel.
+	 */
+	async send(msg: T) {
 		await this.#pub.publish(
 			this.#subject,
 			JSON.stringify({ uid: this.#instanceId, msg })
 		)
 	}
 
-	onMessage(callback: (msg: Object) => void) {
+	/**
+	 * Registers or replaces the message handler.
+	 */
+	onMessage(callback: (msg: T) => void) {
 		this.#onMessage = callback
 	}
-}
 
-export default EvRedisPubSub
+	/**
+	 * Gracefully closes Redis connections.
+	 */
+	async close() {
+		await Promise.all([this.#pub.quit(), this.#sub.quit()])
+	}
+}
