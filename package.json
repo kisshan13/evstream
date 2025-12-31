@@ -1,6 +1,6 @@
 {
 	"name": "evstream",
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"description": "A simple and easy to implement server sent event library for express.js",
 	"keywords": [
 		"sse",
