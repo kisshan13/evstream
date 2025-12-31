@@ -79,6 +79,7 @@ export class EvStreamManager {
 		res.on('close', close)
 
 		return {
+			id: id,
 			authenticate: client.authenticate.bind(client),
 			message: client.message.bind(client),
 			close,
@@ -87,6 +88,41 @@ export class EvStreamManager {
 				channels.push(name)
 				this.#listen(name, id)
 			},
+		}
+	}
+
+	/**
+	 * Sends a message directly to a local client by ID.
+	 *
+	 * This method only targets clients connected to the current process.
+	 * It does not forward the message to Redis.
+	 */
+	private toLocal(id: string, msg: EvMessage) {
+		const client = this.#clients.get(id)
+
+		if (client) {
+			client.message({
+				data: msg,
+			})
+		}
+
+		return client
+	}
+
+	/**
+	 * Sends a message to a specific client by ID.
+	 *
+	 * If the client exists locally, the message is delivered immediately.
+	 * If not, the message is forwarded through Redis so another instance
+	 * can deliver it to the target client.
+	 */
+	to(id: string, msg: EvMessage) {
+		const client = this.toLocal(id, msg)
+
+		if (!client) {
+			if (this.#pubSub) {
+				this.#pubSub.send({ type: 'to', data: { id: id, message: msg } })
+			}
 		}
 	}
 
@@ -124,7 +160,7 @@ export class EvStreamManager {
 		this.sendLocal(name, msg)
 
 		if (this.#pubSub) {
-			this.#pubSub.send({ name, message: msg })
+			this.#pubSub.send({ type: 'send', data: { name, message: msg } })
 		}
 	}
 
@@ -165,10 +201,24 @@ export class EvStreamManager {
 	 * Redis → process entry
 	 */
 	#onMessage(msg: Record<string, any>) {
-		if (!msg?.name || !msg?.message) {
-			return
-		}
+		const type = msg?.type
 
-		this.sendLocal(msg.name, msg.message)
+		switch (type) {
+			case 'send':
+				const name = msg?.data?.name
+				const message = msg?.data?.message
+
+				if (!name || !message) return
+
+				this.sendLocal(name, message)
+				break
+
+			case 'to':
+				const data = msg?.data?.message
+				const id = msg?.data?.id
+
+				this.toLocal(id, data)
+				break
+		}
 	}
 }
